@@ -95,6 +95,13 @@ func (this *Model) Get() bool {
 	return b
 }
 
+func (this *Model) GetById(id interface{}) bool {
+	this.usePrimarykey = false
+	sx := this.Session().Table(this.obj)
+	b, _ := sx.ID(id).Get(this.obj)
+	return b
+}
+
 //添加数据
 func (this *Model) Insert() error {
 	sx := this.Session().Table(this.obj)
