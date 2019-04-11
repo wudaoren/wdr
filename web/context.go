@@ -105,15 +105,6 @@ func (this *Context) BindError(e error) error {
 	return FORMAT_ERROR //数据格式错误
 }
 
-//日志记录（需启动中间件，否则只输出不记录日志）
-func (this *Context) Log() *Log {
-	log, ok := this.Get(KEY_LOG_OBJECT)
-	if !ok {
-		panic("log未启用.")
-	}
-	return log.(*Log)
-}
-
 //获取jwt对象
 func (this *Context) JWT() *JWT {
 	jwt, ok := this.Get(KEY_JWT_OBJECT)

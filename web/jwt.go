@@ -62,7 +62,7 @@ type Claims struct {
 
 //jwt配置接口
 type JWTConfiger interface {
-	DBfile() string        //数据库文件
+	CacheFile() string     //数据库文件
 	Issuer() string        //发行人
 	Secret() string        //密匙
 	Token(*Context) string //口令获取方式
@@ -82,7 +82,7 @@ type JWT struct {
 
 //jwt处理器，初始化
 func JWTHandler(conf JWTConfiger) gin.HandlerFunc {
-	db, err := buntdb.Open(conf.DBfile())
+	db, err := buntdb.Open(conf.CacheFile())
 	if err != nil {
 		log.Fatal(err)
 	}
