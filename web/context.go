@@ -102,6 +102,7 @@ func (this *Context) BindError(e error) error {
 			}
 		}
 	}
+	println(e.Error())
 	return FORMAT_ERROR //数据格式错误
 }
 

@@ -11,3 +11,15 @@ func TransWarp(fn func(*Trans) error) error {
 		return fn(trans)
 	})
 }
+
+type trans struct {
+	t bool
+}
+
+func (this *trans) get() bool {
+	return this.t
+}
+
+func (this *trans) set(b bool) {
+	this.t = b
+}

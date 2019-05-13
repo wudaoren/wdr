@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -22,9 +23,16 @@ import (
 
 //sha1加密
 func Sha1(data string) string {
-	sha1 := sha1.New()
-	sha1.Write([]byte(data))
-	return hex.EncodeToString(sha1.Sum([]byte("")))
+	sha := sha1.New()
+	sha.Write([]byte(data))
+	return hex.EncodeToString(sha.Sum([]byte("")))
+}
+
+//sha1加密
+func Sha256(data string) string {
+	sha := sha256.New()
+	sha.Write([]byte(data))
+	return hex.EncodeToString(sha.Sum([]byte("")))
 }
 
 //md5加密

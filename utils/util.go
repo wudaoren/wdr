@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"regexp"
+	"time"
 )
 
 //执行函数，捕获错误
@@ -31,4 +32,14 @@ func ReadConfig(file string, structPtr interface{}) error {
 	compile, _ := regexp.Compile(`\/\*[^\*]+\*\/`)
 	data = compile.ReplaceAll(data, []byte(""))
 	return json.Unmarshal(data, structPtr)
+}
+
+//当前日期
+func Date() string {
+	return time.Now().Format(FOMART_DATE)
+}
+
+//当前时间
+func DateTime() string {
+	return time.Now().Format(FORMAT_DATETIME)
 }

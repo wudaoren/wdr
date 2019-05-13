@@ -3,61 +3,90 @@ package orm
 import (
 	"errors"
 	"reflect"
+	"wdr/errs"
 
 	"github.com/go-xorm/xorm"
 )
 
+type storage struct {
+	openTrans bool
+	session   *xorm.Session
+	engine    *xorm.Engine
+}
+
 type Engine struct {
-	useTransaction bool
-	session        *xorm.Session
-	engine         *xorm.Engine
+	storage *storage
+	sons    []*Engine
+	extend  bool
 }
 
-//设置引擎
-func (this *Engine) SetXORM(eg *xorm.Engine) *Engine {
-	this.engine = eg
-	return this
-}
-
-//获取引擎
-func (this *Engine) GetXORM() *xorm.Engine {
-	if this.engine == nil {
+func (this *Engine) init() {
+	if this.storage == nil {
+		this.storage = new(storage)
 		if engine == nil {
 			panic("未初始化orm数据库引擎。")
 		}
-		this.engine = engine
+		this.storage.engine = engine
+		this.sons = make([]*Engine, 0)
 	}
-	return this.engine
+}
+
+//设置引擎
+func (this *Engine) SetEngine(eg *xorm.Engine) {
+	this.init()
+	this.storage.engine = eg
+	return
+}
+
+//获取引擎
+func (this *Engine) GetEngine() *xorm.Engine {
+	this.init()
+	return this.storage.engine
 }
 
 //获取模型数据库会话，如果会话不存在则创建新会话
 func (this *Engine) Session() *xorm.Session {
-	if this.session == nil {
-		this.session = this.GetXORM().NewSession()
+	this.init()
+	if this.storage.session == nil {
+		this.storage.session = this.GetEngine().NewSession()
 	}
-	return this.session
+	return this.storage.session
 }
 
-//获取引擎对象
-func (this *Engine) GetEngine() *Engine {
-	return this
+type Enginer interface {
+	grantSon(*Engine)
 }
 
-//继承引擎,保证所有的事务都在同一条线上
-func (this *Engine) ExtendEngine(eg Enginer) *Engine {
-	this = eg.GetEngine()
-	return this
+//被继承
+//给继承者赋予同样session
+func (this *Engine) grantSon(son *Engine) {
+	this.Session()
+	son.storage = this.storage
+	if !son.extend {
+		this.sons = append(this.sons, son)
+		son.extend = true
+	}
+}
+
+//继承引擎,如果有子继承者，则将子继承者全部统一
+func (this *Engine) ExtendEngine(parent Enginer) {
+	parent.grantSon(this)
+	if this.sons != nil {
+		for _, eg := range this.sons {
+			eg.ExtendEngine(this)
+		}
+	}
 }
 
 //开启事务,如果继承了引擎，那么当前事务将使用上级的事务
 func (this *Engine) Transaction(fn func(*Session) error) (err error) {
 	sx := this.Session()
-	if this.useTransaction {
+	if this.storage.openTrans {
 		return fn(sx)
 	}
-	this.useTransaction = true
+	this.storage.openTrans = true
 	defer func() {
-		this.useTransaction = false
+		this.storage.openTrans = false
 		if err != nil {
 			sx.Rollback()
 		} else {
@@ -72,14 +101,14 @@ func (this *Engine) Transaction(fn func(*Session) error) (err error) {
 //不使用继承方式直接创建一个模型
 func (this *Engine) Model(obj ModelInterface) *Model {
 	var model = new(Model)
-	model.engine = this.engine
+	model.ExtendEngine(this)
 	return model.InitModel(obj)
 }
 
 //当更新的数据不是1条时返回错误
 func (this *Engine) IsOneChange(changes int64, e error) error {
 	if e != nil {
-		return e
+		return errs.Fatal(e.Error())
 	} else if changes != 1 {
 		return errors.New("存储失败")
 	}
@@ -89,7 +118,7 @@ func (this *Engine) IsOneChange(changes int64, e error) error {
 //查询异常判断
 func (this *Engine) IsGetOK(ok bool, e error) error {
 	if e != nil {
-		return e
+		return errs.Fatal(e.Error())
 	} else if !ok {
 		return errors.New("查询错误")
 	}
@@ -113,6 +142,9 @@ func (this *Engine) FindPage(session *xorm.Session, listPtr interface{}, page, l
 	}
 	start := (page - 1) * limit
 	err = session.Limit(limit, start).Find(listPtr)
+	if err != nil {
+		return 0, errs.Fatal(err.Error())
+	}
 	return total, err
 }
 

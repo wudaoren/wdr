@@ -20,6 +20,9 @@ func SequenceHandler(gcTime int64, onrepeat func(*gin.Context)) gin.HandlerFunc 
 	seq.gc(gcTime)
 	return func(c *gin.Context) {
 		defer c.Next()
+		if c.Request.Method == "GET" {
+			return
+		}
 		key := fmt.Sprint(c.Request.Method, c.Request.RemoteAddr, c.Request.URL, c.Request.UserAgent(), c.Request.ContentLength)
 		if _, ok := seq.requested.Load(key); ok {
 			onrepeat(c)

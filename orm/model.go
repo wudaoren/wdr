@@ -2,6 +2,11 @@ package orm
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
+
+	//	"reflect"
+	"sync"
 )
 
 /*------------------  使用示例  -----------------
@@ -21,43 +26,53 @@ func NewUser() *User {
 注：一定要在结构体的主键字段的tag里声明model,默认主键名与字段名相同，也可任意设置
 
 */
+var tableCache = new(sync.Map)
+
+//清除所有缓存
+func ClearCache() {
+	tableCache = new(sync.Map)
+}
 
 type Model struct {
-	Engine        //继承引擎基类
-	session       *Session
+	Engine                       //继承引擎基类
 	obj           ModelInterface //model对象
 	usePrimarykey bool           //使用默认主键查询
+	omit          []string
+	cols          []string
+	must          []string
 	data          interface{}
 }
 
 //初始化数据模型，obj为指针
 func (this *Model) InitModel(obj ModelInterface) *Model {
 	this.obj = obj
+	this.omit = make([]string, 0)
+	this.cols = make([]string, 0)
+	this.must = make([]string, 0)
 	this.usePrimarykey = true
-	this.session = this.Session()
 	return this
 }
 
 //表别名
 func (this *Model) Alias(alias string) string {
-	return fmt.Sprintf("`%s`.`%s`", this.obj.TableName(), alias)
+	return fmt.Sprintf("`%s` as `%s`", this.obj.TableName(), alias)
 }
 
 //必须有的字段，比如age=0会强制写入数据库
 func (this *Model) Must(cols ...string) *Model {
-	this.Session().MustCols(cols...)
+	this.must = append(this.must, cols...)
 	return this
 }
 
 //忽略添加修改的字段
 func (this *Model) Omit(cols ...string) *Model {
-	this.Session().Omit(cols...)
+	this.omit = append(this.omit, cols...)
 	return this
 }
 
 //指定添加修改的字段
 func (this *Model) Cols(cols ...string) *Model {
-	this.Session().Cols(cols...)
+	this.cols = append(this.cols, cols...)
 	return this
 }
 
@@ -83,7 +98,9 @@ func (this *Model) Match(column string, data interface{}) *Model {
 
 //是否存在
 func (this *Model) Exists() bool {
-	b, _ := this.Session().Table(this.obj).Limit(1).NoAutoCondition().Exist(this.obj)
+	sx := this.Session()
+	this.preprocessing(sx)
+	b, _ := sx.Table(this.obj).Limit(1).NoAutoCondition().Exist(this.obj)
 	return b
 }
 
@@ -95,11 +112,44 @@ func (this *Model) Get() bool {
 	return b
 }
 
-func (this *Model) GetById(id interface{}) bool {
-	this.usePrimarykey = false
-	sx := this.Session().Table(this.obj)
-	b, _ := sx.ID(id).Get(this.obj)
-	return b
+//查询对象，如果有缓存，则使用缓存
+func (this *Model) GetById(id interface{}) error {
+	key := this.obj.TableName()
+	table, ok := tableCache.Load(key)
+	if !ok {
+		table = new(sync.Map)
+		tableCache.Store(key, table)
+	}
+	tableMap := table.(*sync.Map)
+	data, ok := tableMap.Load(id)
+	if ok {
+		val := reflect.ValueOf(this.obj).Elem()
+		dta := reflect.ValueOf(data).Elem()
+		typ := reflect.TypeOf(this.obj)
+		for i := 0; i < val.NumField(); i++ {
+			tag := typ.Elem().Field(i).Tag
+			if field := val.Field(i); field.CanSet() && strings.TrimSpace(tag.Get("xorm")) != "-" {
+				field.Set(dta.Field(i))
+			}
+		}
+		return nil
+	}
+	sx := this.Session().Table(this.obj).ID(id)
+	if err := this.IsGetOK(sx.Get(this.obj)); err != nil {
+		return err
+	}
+	tableMap.Store(id, this.obj)
+	return nil
+}
+
+//清理缓存
+func (this *Model) clearCacheById(id interface{}) {
+	key := this.obj.TableName()
+	table, ok := tableCache.Load(key)
+	if !ok {
+		return
+	}
+	table.(*sync.Map).Delete(id)
 }
 
 //添加数据
@@ -114,6 +164,7 @@ func (this *Model) Insert() error {
 func (this *Model) Update() error {
 	sx := this.Session().Limit(1)
 	l, e := sx.Update(this.preprocessing(sx))
+	this.clearCacheById(this.obj.PrimaryKey())
 	return this.IsOneChange(l, e)
 }
 
@@ -122,6 +173,7 @@ func (this *Model) Delete() error {
 	sx := this.Session().Limit(1)
 	obj := this.preprocessing(sx)
 	l, e := sx.NoAutoCondition().Delete(obj)
+	this.clearCacheById(this.obj.PrimaryKey())
 	return this.IsOneChange(l, e)
 }
 
@@ -129,6 +181,15 @@ func (this *Model) Delete() error {
 func (this *Model) preprocessing(sx *Session) interface{} {
 	if this.usePrimarykey {
 		sx.Id(this.obj.PrimaryKey())
+	}
+	if len(this.cols) > 0 {
+		sx.Cols(this.cols...)
+	}
+	if len(this.omit) > 0 {
+		sx.Omit(this.omit...)
+	}
+	if len(this.must) > 0 {
+		sx.MustCols(this.must...)
 	}
 	this.usePrimarykey = true
 	if this.data != nil {

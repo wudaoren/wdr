@@ -62,12 +62,13 @@ type Claims struct {
 
 //jwt配置接口
 type JWTConfiger interface {
-	CacheFile() string     //数据库文件
-	Issuer() string        //发行人
-	Secret() string        //密匙
-	Token(*Context) string //口令获取方式
-	Error(*Context)        //当出现错误时
-	Timeout(*Context)      //当超时时
+	CacheFile() string         //数据库文件
+	Issuer() string            //发行人
+	Secret() string            //密匙
+	Token(*Context) string     //口令获取方式
+	Error(*Context)            //当出现错误时
+	Timeout(*Context)          //当超时时
+	LifeMinute() time.Duration //生存时间(单位分）
 }
 
 //
@@ -144,8 +145,8 @@ func JWTintercept(group string) gin.HandlerFunc {
 //group 用户组
 func (this *JWT) GenerateToken(username, password string, id int64, group string) (string, error) {
 	nowTime := time.Now()
-	expireTime := nowTime.Add(180 * time.Minute) //失效时间
-	outTime := nowTime.Add(150 * time.Minute)    //刷新token时间
+	expireTime := nowTime.Add(this.conf.LifeMinute())  //失效时间
+	outTime := nowTime.Add(this.conf.LifeMinute() / 2) //刷新token时间
 	claims := Claims{
 		UserId:   id,
 		Username: username,
