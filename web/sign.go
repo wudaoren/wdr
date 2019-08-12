@@ -3,8 +3,7 @@ package web
 import (
 	"fmt"
 	"sync"
-
-	"gitee.com/wudaoren/wdr/utils"
+	"wdr/utils"
 
 	"github.com/gin-gonic/gin"
 )

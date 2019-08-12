@@ -4,8 +4,7 @@ import (
 	"errors"
 	"reflect"
 	"runtime/debug"
-
-	"gitee.com/wudaoren/wdr/errs"
+	"wdr/errs"
 
 	"github.com/go-xorm/xorm"
 )
