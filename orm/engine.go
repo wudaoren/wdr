@@ -3,6 +3,7 @@ package orm
 import (
 	"errors"
 	"reflect"
+	"runtime/debug"
 	"wdr/errs"
 
 	"github.com/go-xorm/xorm"
@@ -87,11 +88,16 @@ func (this *Engine) Transaction(fn func(*Session) error) (err error) {
 	this.storage.openTrans = true
 	defer func() {
 		this.storage.openTrans = false
+		if e := recover(); e != nil {
+			err = errs.Fatal(e, string(debug.Stack()))
+			sx.Rollback()
+			return
+		}
 		if err != nil {
 			sx.Rollback()
-		} else {
-			sx.Commit()
+			return
 		}
+		sx.Commit()
 	}()
 	sx.Begin()
 	err = fn(sx)

@@ -1,10 +1,11 @@
 package orm
 
 import (
+	"database/sql"
 	"fmt"
 	"testing"
 
-	_ "github.com/go-sql-driver/mysql"
+	  "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
 )
@@ -31,14 +32,18 @@ func (this *User) PrimaryKey() interface{} {
 }
 
 //乐观锁测试
-func init() {
+func initdata() {
+	mysql.Config
 	eg, _ := xorm.NewEngine("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", "root", "", "127.0.0.1:3306", "test"))
 	eg.ShowSQL(true)
 	eg.SetMapper(new(core.SameMapper))
+	InitEngine(eg)
 }
 
 func TestTrans(t *testing.T) {
+	initdata()
 	a := NewUser()
-	b := NewUser()
-	c := New
+	_, e := a.Session().Where("id=?", "' show databases;").Get(a)
+	fmt.Println(e)
+	new(sql.DB).Exec()
 }

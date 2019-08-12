@@ -404,7 +404,7 @@ func run() {
 	}
 
 	for {
-		sortList := NewMapSorter(AdminTaskList)
+		sortList := newMapSorter(AdminTaskList)
 		sortList.Sort()
 		var effective time.Time
 		if len(AdminTaskList) == 0 || sortList.Vals[0].GetNext().IsZero() {
@@ -465,8 +465,8 @@ type MapSorter struct {
 	Vals []Tasker
 }
 
-// NewMapSorter create new tasker map
-func NewMapSorter(m map[string]Tasker) *MapSorter {
+// newMapSorter create new tasker map
+func newMapSorter(m map[string]Tasker) *MapSorter {
 	ms := &MapSorter{
 		Keys: make([]string, 0, len(m)),
 		Vals: make([]Tasker, 0, len(m)),

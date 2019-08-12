@@ -11,9 +11,11 @@ func RegModels(models ...interface{}) {
 	models_list = append(models_list, models...)
 }
 
-type Moduler interface {
+type Componenter interface {
 	InitModels()
 }
+
+type Moduler = Componenter
 
 //安装
 func Install(engine *xorm.Engine, modules ...Moduler) error {

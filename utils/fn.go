@@ -69,6 +69,11 @@ func MakeSN(head string) string {
 	return str[:18]
 }
 
+//
+func CheckSN(sn string) bool {
+	return len(sn) == 18
+}
+
 //将byte类型转换成字符串，例如[]byte{1,2,3,4,5}转换成"1,2,3,4,5"
 //输入：bt=字节码,dilimiter=连接字符串
 func Byte2Str(bt []byte, dilimiter string) string {

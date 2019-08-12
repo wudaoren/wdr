@@ -8,7 +8,7 @@ import (
 )
 
 //异常恢复中间件
-func Recover(fn func(c *gin.Context, errs ...interface{})) gin.HandlerFunc {
+func Recover(fn func(c *gin.Context, err interface{}, info ...interface{})) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {

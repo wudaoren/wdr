@@ -41,6 +41,7 @@ type Model struct {
 	cols          []string
 	must          []string
 	data          interface{}
+	cache         bool
 }
 
 //初始化数据模型，obj为指针
@@ -192,6 +193,9 @@ func (this *Model) preprocessing(sx *Session) interface{} {
 		sx.MustCols(this.must...)
 	}
 	this.usePrimarykey = true
+	this.omit = make([]string, 0)
+	this.cols = make([]string, 0)
+	this.must = make([]string, 0)
 	if this.data != nil {
 		data := this.data
 		this.data = nil

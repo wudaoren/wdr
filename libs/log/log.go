@@ -18,7 +18,7 @@ func NewLog(dir string, debug bool) *Log {
 	object.debug = debug
 	if !debug {
 		os.MkdirAll(dir, 0776)
-		path := fmt.Sprintf("%s/%s.log", dir, time.Now().Format("2006.01.02.15.04.05"))
+		path := fmt.Sprintf("%s/%s.log", dir, time.Now().Format("2006.01.02"))
 		file, _ := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0776)
 		object.logger = log.New(file, "", log.LstdFlags|log.Llongfile)
 	}
@@ -72,7 +72,7 @@ func (this *Log) Print(arg ...interface{}) {
 
 //
 func (this *Log) Printf(fomrat string, arg ...interface{}) {
-	fmt.Printf(fomrat, arg...)
+	fmt.Printf(fomrat+"\n", arg...)
 }
 
 //

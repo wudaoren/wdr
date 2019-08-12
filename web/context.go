@@ -27,8 +27,13 @@ func NewContext(c *gin.Context) *Context {
 }
 
 //获取session对象
-func (this *Context) Session() {
-
+func (this *Context) Session() *MemSession {
+	if data, ok := this.Get(SESSION); ok {
+		if sess, ok := data.(*MemSession); ok {
+			return sess
+		}
+	}
+	return nil
 }
 
 //json输出
@@ -92,7 +97,7 @@ func (this *Context) BindError(e error) error {
 	switch errs := e.(type) {
 	case validator.ValidationErrors:
 		for _, field := range errs {
-			t := field.RefField.Type().Elem()
+			t := field.Type.Elem()
 			if f, ok := t.FieldByName(field.Field); ok {
 				if note := f.Tag.Get("note"); note != "" {
 					return errors.New(note)
