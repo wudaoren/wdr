@@ -196,3 +196,7 @@ func IP2Address(ip string) string {
 	}
 	return ""
 }
+
+func Print() {
+
+}
