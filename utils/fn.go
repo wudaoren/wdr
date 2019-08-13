@@ -197,6 +197,6 @@ func IP2Address(ip string) string {
 	return ""
 }
 
-func Print() {
-
+func Print(str string) {
+	println("ni shuru deshi:", str)
 }
