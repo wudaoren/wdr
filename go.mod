@@ -1,4 +1,4 @@
-module github.com/wudaoren/wdr
+module gitee.com/wudaoren/wdr
 
 go 1.12
 
